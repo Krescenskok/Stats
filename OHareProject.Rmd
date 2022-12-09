@@ -1,0 +1,339 @@
+---
+title: "Do you really want to fly out of O'Hare?"
+author: "Jaima Schulte, Hannah Mazzei, Krescens Kok, and Yiting Chen"
+date: "Group 10"
+output: 
+  html_document:
+    theme: spacelab
+    toc: yes
+  pdf_document: default
+urlcolor: BrickRed
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+```
+
+```{r}
+flights = read_csv("2005.csv")
+```
+
+```{r}
+flights$Month = month.name[flights$Month]
+day_names = c("Monday", "Tuesday", "Wednesday", "Thursday", 
+              "Friday", "Saturday", "Sunday")
+flights$DayOfWeek = factor(day_names[flights$DayOfWeek], levels = day_names)
+```
+
+# Abstract
+
+The objective of this project was to determine whether or not there were differences in average departure delay times as well as differences in the proportion of flights cancelled by day at three of the busiest airports in the United States: Hartsfield-Jackson in Atlanta (ATL), Los Angeles International Airport (LAX), and O'Hare International Airport in Chicago (ORD). We used an ANOVA $F$-test and a pairwise Tukey test to analyze the differences in departure delay times. We used a Chi-Square test and a pairwise test with Bonferroni correction to analyze differences in the proportion of flights cancelled by day. Using these tests, we were able to conclude that there were differences in mean departure delay times for LAX - ATL and ORD - LAX. Additionally, we found that there were significant differences in the proportion of flights cancelled from these origins for all day combinations except Tuesday - Monday and Saturday - Thursday.
+
+# Introduction
+
+In this project, we analyzed flight data from 2005. This data contains many variables: dates (year, month, day, and day of week), origin, destination, distance, delay times, and more. We chose to focus on origin, departure delay time (in minutes), and cancellations. A complete data dictionary explaining each of the variables we used in our analysis is available in the [Appendix].
+
+The goal of this analysis was to answer two questions about the three busiest airports in the country: Hartsfield-Jackson in Atlanta (ATL), Los Angeles International Airport (LAX), and O'Hare International Airport in Chicago (ORD). We wanted to determine if there were differences in the average departure delay times by origin and if there were differences in the proportion of flights cancelled by day at these airports. We then followed up these questions by determining how departure delay times and cancellations were different. 
+
+# Methods
+
+## Data
+In the [Appendix], you can see that the data we are using is both quantitative and categorical; the day of the week, airport, and cancellation, even though its categories are represented numerically, are categorical, and departure delay time is quantitative. Each row in the data set represents a single flight in 2005.
+
+## Testing
+We first analyzed average departure delay time by airport. As stated previously, we included ATL, LAX, and ORD. Additionally we only considered departure delay times longer than 15 minutes because that is when the Federal Aviation Administration considers a flight to be delayed. After filtering our data, we performed an ANOVA $F$-Test testing the following hypothesis:  
+
+$$
+H_0: \mu_{ATL} = \mu_{LAX} = \mu_{ORD}   
+$$
+against an alternative where at least one pair of means is different. Here,  
+
+- $\mu_{ATL}$ if the mean departure delay in minutes for flights departing from ATL
+- $\mu_{LAX}$ if the mean departure delay in minutes for flights departing from LAX
+- $\mu_{ORD}$ if the mean departure delay in minutes for flights departing from ORD
+
+We analyzed the assumptions of the ANOVA $F$-test using a normal qq-plot and a residuals vs. fitted plot to check for normality and equal variance. Then, we performed a pairwise Tukey test to determine which airports are statistically significant. * Note: if the assumptions of the ANOVA $F$-test are met, the assumptions for the Tukey test are also met. *
+
+We then analyzed the differences in proportions of cancellations at the busiest airports by day of the week. To do so, we performed a Chi-Square test for the following hypothesis:
+
+$$
+H_0: p_{Monday} = p_{Tuesday} = p_{Wednesday} = p_{Thursday} = p_{Friday} = p_{Saturday} = p_{Sunday}   
+$$
+
+against an alternative where at least one pair of proportions is different. Here,
+
+- $p_i$ is the proportion of cancellations on $i$ day  
+
+We can assume that the cancellations by day are independent since the sample is over an entire year, and the top 3 busiest airports are located in different regions of the country. Using a pairwise test (with Bonferroni correction), we compared the proportions of flights cancelled across all days. We also checked the normality for the pairwise test to ensure its validity.
+
+# Results
+
+## ANOVA $F$-test
+
+```{r}
+flights_delay = flights %>% filter(Origin == "ATL" | Origin == "LAX" | Origin == "ORD", DepDelay > 15)
+```
+
+Before performing the ANOVA $F$-test we wanted to know the distribution of the flight delay times departing from ATL, LAX, or ORD.
+
+```{r fig.width=10}
+delay1 = ggplot(flights_delay, aes(x = Origin, y = DepDelay, col = Origin)) + 
+  geom_boxplot() +
+  geom_jitter(position = position_jitter(0.2), alpha = 0.6)
+
+delay2 = ggplot(flights_delay, aes(x = DepDelay, fill = Origin)) +
+
+  geom_density(alpha = .6) 
+
+ggmatrix(list(delay1, delay2), nrow = 1, ncol = 2) + 
+  ggtitle("Distribution of Departure Delays by Origin") + 
+  ylab("Departure Delays (in minutes)")
+```
+
+The results of the test gave the following table which shows that there is a statistically significant difference in the average departure delay times.  
+
+```{r}
+aov_fit = aov(DepDelay ~ Origin, data = flights_delay)
+```
+
+```{r}
+library(pander)
+```
+
+```{r}
+model = lm( DepDelay ~ Origin, data = flights_delay )
+pander( anova(model) ) 
+```
+
+While the test gave a statistically significant result, these results aren't meaningful if the test is not valid. We made a normal qq-plot and a residuals vs. fitted plot to determine whether or not the normality and equal variance assumptions were met. The results were as follows: 
+
+```{r}
+par(mfrow = c(1, 2))
+qqnorm(residuals(aov_fit), 
+       col = "plum", 
+       alpha = 0.6, 
+       pch = 20)
+qqline(residuals(aov_fit), 
+       lwd = 2, 
+       col = "darkgrey")
+grid()
+
+plot(fitted(aov_fit), 
+     residuals(aov_fit), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     col = "plum", 
+     alpha = 0.6, 
+     pch = 20, 
+     main = "Residuals vs. Fitted Values")
+grid()
+abline(h = 0, col = "darkgrey", lwd = 2)
+```
+
+As you can see, the residuals vs. fitted plot looks reasonable, so it is safe to assume equal variance. However, the normal qq-plot is not the greatest since we have significantly skewed data. Since we were not comfortable assuming normality, we decided to do a log transformation of the departure delay time data in order to reduce the skew. This transformation resulted in the following distribution:
+
+```{r}
+flights_delay$DepDelay_log = log(flights_delay$DepDelay)
+```
+
+```{r fig.width=10}
+delay1 = ggplot(flights_delay, aes(x = Origin, y = DepDelay_log, col = Origin)) + 
+  geom_boxplot() +
+  geom_jitter(position = position_jitter(0.2), alpha = 0.6)
+
+delay2 = ggplot(flights_delay, aes(x = DepDelay_log, fill = Origin)) +
+
+  geom_density(alpha = .6) 
+
+ggmatrix(list(delay1, delay2), nrow = 1, ncol = 2) + 
+  ggtitle("Distribution of Departure Delays by Origin (transformed)") + 
+  ylab("Departure Delays (in minutes)")
+```
+
+As you can see, the distribution is now much less skewed. Below are the results of the ANOVA $F$-test and the validation plots. The normal qq-plot and the residuals vs. fitted plots look good as well, so we will assume normality and equal variance.
+
+```{r}
+aov_fit2 = aov(DepDelay_log ~ Origin, data = flights_delay)
+```
+
+```{r}
+library(pander)
+```
+
+```{r}
+model2 = lm( DepDelay_log ~ Origin, data = flights_delay )
+pander( anova(model2) ) 
+```
+
+```{r}
+par(mfrow = c(1, 2))
+qqnorm(residuals(aov_fit2), 
+       col = "plum",
+       alpha = 0.6,
+       pch = 20)
+qqline(residuals(aov_fit2), lwd = 2, col = "darkgrey")
+grid()
+
+plot(fitted(aov_fit2), 
+     residuals(aov_fit2), 
+     xlab = "Fitted Values", 
+     ylab = "Residuals", 
+     col = "plum",
+     alpha = 0.6,
+     pch = 20, 
+     main = "Residuals vs. Fitted Values")
+grid()
+abline(h = 0, col = "darkgrey", lwd = 2)
+```
+
+## Tukey test
+
+Since the test with the transformed data still shows a significant p-value, the results of the following pairwise Tukey test are shown below.
+
+```{r}
+tuk = TukeyHSD(aov_fit2)
+```
+
+```{r}
+par(mar=c(4, 10, 4, 4))
+plot(tuk, 
+     las = 2, 
+     col = "lightpink3")
+```
+
+## Chi-Square test
+
+```{r}
+monday = flights %>% 
+  filter(DayOfWeek == "Monday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_mon = nrow(monday)
+
+tuesday = flights %>% 
+  filter(DayOfWeek == "Tuesday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_tues = nrow(tuesday)
+
+wednesday = flights %>% 
+  filter(DayOfWeek == "Wednesday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_wed = nrow(wednesday)
+
+thursday = flights %>% 
+  filter(DayOfWeek == "Thursday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_thur = nrow(thursday)
+
+friday = flights %>% 
+  filter(DayOfWeek == "Friday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_fri = nrow(friday)
+
+saturday = flights %>% 
+  filter(DayOfWeek == "Saturday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_sat = nrow(saturday)
+
+sunday = flights %>% 
+  filter(DayOfWeek == "Sunday", Cancelled == "1", Origin == "ORD" | Origin == "LAX" | Origin == "ATL")
+num_flights_sun = nrow(sunday)
+
+total = sum(num_flights_mon + num_flights_tues + num_flights_wed + num_flights_thur + num_flights_fri + num_flights_sat + num_flights_sun)
+
+estimate = total/7
+```
+
+```{r}
+a = chisq.test(x=c(num_flights_mon, num_flights_tues, num_flights_wed, num_flights_thur, num_flights_fri, num_flights_sat, num_flights_sun),
+           p=rep(1/7, 7))
+
+stat = a$statistic
+p = a$p.value
+```
+
+This Chi-Square test produced the following results:
+
+- X-squared = `r stat`
+- p-value = `r p`
+
+Below is a plot of the expected versus observed number of flight cancellations by day of the week.
+
+```{r}
+barplot(matrix(c(3058, 3526, 3556, 3526, 3526, 3526, 4231, 3526, 3884, 3526, 2995, 3526, 3432, 3526),nr=2), beside= TRUE, 
+        col=c("indianred1","deepskyblue"),
+        names.arg = c("Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat"), 
+        main = "Observed vs Expected Cancellation Flights", 
+        xlab = "Day of the Week", 
+        ylab = "Number of Cancelled Flights",
+        border = "darkgrey")
+legend("topleft", 
+       c("Observed","Expected"), 
+       pch=15, 
+       col=c("indianred1","deepskyblue"), 
+       bty="n")
+```
+
+## Pairwise test (with Bonferroni correction)
+
+Since the Chi-Square test showed significant results, we continued with a pairwise test (with Bonferroni correction). Below is a table containing all of the combinations of days of the week with their corresponding p-values.
+
+```{r}
+b = pairwise.t.test(flights$Cancelled, flights$DayOfWeek, p.adjust.method = "bonf")
+```
+
+```{r}
+library(tadaatoolbox)
+```
+
+```{r fig.width= 5}
+tadaa_pairwise_t(data = flights, response = Cancelled, group1 = DayOfWeek, p.adjust = "bonf", print = "markdown")
+```
+
+While many of the pairs of days show significant p-values, we need to make sure that the test is valid. Below is a histogram and a normal qq-plot to show the distribution of the number of cancellations by day.
+
+```{r}
+counts = c(num_flights_mon, num_flights_tues, num_flights_wed, num_flights_thur, num_flights_fri, num_flights_sat, num_flights_sun)
+
+par(mfrow = c(1,2))
+
+hist(counts, 
+     col = "grey", 
+     probability = TRUE, 
+     xlim = c(2000, 5000), 
+     ylim = c(0, 0.001),
+     main = "Histogram of Cancellations",
+     xlab = "Number of Cancellations")
+curve(dnorm(x, mean = mean(counts), sd = sd(counts)), 
+      col = "indianred1", 
+      lwd =2, 
+      add = TRUE)
+
+qqnorm(counts, 
+       col = "indianred1", 
+       pch = 20)
+qqline(counts,
+       col = "grey")
+```
+
+The histogram and qq plot look pretty good, so we can conclude that the test is valid.
+
+# Discussion
+
+Flight data is an important topic to study because it allows us to plan flights in the most effective and enjoyable way.  
+
+Throughout this project, we were able to find differences between average departure delay times from ATL, LAX, and ORD. More specifically, we found that LAX - ATL and ORD - LAX were statistically significant. Our data suggests that LAX has a shorter departure delay time than ATL and ORD while the difference between ATL and ORD is indistinguishable. 
+
+Furthermore, we found significant differences in the proportion of cancelled flights departing from ATL, LAX, and ORD by day of the week. Each combination of days except for Tuesday - Monday and Saturday - Thursday were significant.
+
+One important factor that was not considered in this analysis is climate. Los Angeles, Atlanta, and Chicago all have very different climates which could ultimately impact departure delays and cancellations. In order to account for this in future analyses, we would consider the climate of the destination and the month of the year of the flight.
+
+# Appendix
+- `Origin`: The airport from which the flight departed
+- `DepDelay`: The departure delay of the flight (in minutes)
+- `DayOfWeek`: The day of the week for the flight
+- `Cancelled`: Whether the flight was cancelled (1 for cancelled, 0 for not cancelled)
