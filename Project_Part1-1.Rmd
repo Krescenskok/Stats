@@ -1,0 +1,197 @@
+---
+title: "Stat 3301: Data Analysis Project Part 1"
+author: "Krescens Kok"
+date: "10/09/2019"
+output:
+  html_document:
+    theme: spacelab
+    toc: yes
+  pdf_document: default
+urlcolor: BrickRed
+---
+***
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+houseData <- read_csv("/Users/krescenskok/Documents/Stats 3301/ames_housing_data_PROJECT2019.csv")
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(packHV)
+```
+
+```{r, echo=FALSE, message = FALSE}
+SalePrice = houseData$SalePrice
+LotArea = houseData$LotArea
+YearBuilt = houseData$YearBuilt
+SqFt = houseData$SqFt
+
+lotArealog = log(LotArea)
+yearbuiltlog = log(YearBuilt)
+SalePriceLog = log(SalePrice)
+SqFtLog = log(SqFt)
+```
+
+```{r, echo=FALSE, message = FALSE}
+focus = houseData %>% select(SalePrice, LotArea, YearBuilt, SqFt)
+
+sIQR = IQR(SalePrice)
+loutlier = 134112 - 1.5*sIQR
+uoutlier = 223875 + 1.5*sIQR
+lIQR = IQR(LotArea)
+loutlier = 8372 - 1.5*lIQR
+uoutlier = 11956 + 1.5*lIQR
+yIQR = IQR(YearBuilt)
+loutlier= 1956 - 1.5*yIQR
+uoutlier = 1999 + 1.5*yIQR
+sqIQR = IQR(SqFt)
+loutlier = 1092 - 1.5*sqIQR
+uoutlier = 1795 + 1.5*sqIQR
+```
+
+# Sale Price
+After analyzing the graphs, the distribution seems to have an approximately normal distribution, however it is skewed right. Since the mean is greater than the median, this also reveals that the data is skewed right because the data increases the value of the mean, but the median is resistant to outliers. Any data point above the price $358,512 is considered an outlier.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+hist(SalePrice, xlab = "Sale Price", main = "Graph of Sale Price", probability =TRUE, col = "mediumpurple")
+lines(density(SalePrice), lwd = 2)
+boxplot(SalePrice, col = "mediumpurple", main = "Boxplot of Sale Price")
+summary(SalePrice)
+```
+
+# Lot Area
+The histogram of the lot area data is extremely skewed right. The mean is about 2,000 square feet more than the median, which shows that the data increases the value of the mean. Any data point below 2996 and above 17,332 square feet is considered an outlier. After completing a log transformation of the data, it reduces the skewness drastically and appears to be approximately normal. With the log transformation, the mean and median are very similar in value, which also reveals that the data is normal.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+hist(LotArea, xlab = "Lot Area", main = "Graph of Lot Area", probability = TRUE, col = "aquamarine")
+lines(density(LotArea), lwd = 2)
+boxplot(LotArea, col = "aquamarine", main = "Boxplot of Lot Area")
+summary(LotArea)
+hist(lotArealog, xlab = "(log)Lot Area", main = "Graph of (log)Lot Area", probability = TRUE, col = "aquamarine")
+lines(density(lotArealog), lwd = 2)
+boxplot(lotArealog, col = "aquamarine", main = "Boxplot of (log)Lot Area")
+summary(lotArealog)
+```
+
+## Relating Sale Prices and Lot Areas
+Using a scatterplot to graph the Sale Prices vs Lot Areas, it is hard to determine whether the variables are linearly correlated because the data points spread away from each other as the lot area increases. After using a log transformation on both variables, it doesn't help because the same is seen as before.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+a = ggplot(houseData, aes(x = LotArea, y = SalePrice)) + geom_point() + xlab("Lot Area") + ylab("Sale Price") + ggtitle("Sale Price vs Lot Area")
+a
+
+d = ggplot(houseData, aes(x = lotArealog, y = SalePriceLog)) + geom_point() + xlab("(log)Lot Area") + ylab("(log)Sale Price") + ggtitle("(log)Sale Price vs (log)Lot Area")
+d
+
+```
+
+# Year Built
+The data appears to have a multimodal distribution because there are multiple peaks and seems to be skewed left, however, the mean and median values are very close. Any data point below the year 1891 is considered an outlier.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+hist(YearBuilt, xlab = "Year Built", main = "Graph of Year Built", probability =TRUE, col = "plum1")
+lines(density(YearBuilt), lwd = 2)
+boxplot(YearBuilt, col = "plum1", main = "Boxplot of Year Built")
+summary(YearBuilt)
+```
+
+## Relating Sale Prices and Years
+The scatterplot reveals a curvature pattern between the two variables, and even after doing a log transformation, it's still hard to determine whether there is a linear regression, as there is still a curvature pattern to it.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+c = ggplot(houseData, aes(x = YearBuilt, y = SalePrice)) + geom_point() + xlab("Year Built") + ylab("SalePrice") + ggtitle("Sale Price vs Year Built")
+c
+
+d = ggplot(houseData, aes(x = yearbuiltlog, y = SalePriceLog)) + geom_point() + xlab("(log)Year Built") + ylab("(log)SalePrice") + ggtitle("(log)Sale Price vs (log)Year Built")
+d
+```
+
+# Square Feet
+The histogram of this graph is approximately normal, however there is a right skew present. The mean value is greater than the median which further explains the skew, and the data values increases the mean. Any data point above 2,849 square feet is considered an outlier. After performing a log transformation to the data points, the distribution becomes more normal and the median and mean values become closer in value.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+hist(SqFt, xlab = "Square Feet", main = "Graph of Square Feet", probability =TRUE, col = "lightskyblue")
+lines(density(SqFt), lwd = 2)
+boxplot(SqFt, col = "lightskyblue", main = "Boxplot of Square Feet")
+summary(SqFt)
+hist(SqFtLog, xlab = "Square Feet", main = "Graph of Square Feet", probability =TRUE, col = "lightskyblue")
+lines(density(SqFtLog), lwd = 2)
+boxplot(SqFtLog, col = "lightskyblue", main = "Boxplot of Square Feet")
+summary(SqFtLog)
+
+```
+
+## Sale Prices vs Square Footage
+As seen from the graph, it's possible that the Sale Prices and Square Feet points have a linear regression, however, the data points still spread out as the Square Feet points increase. After doing a log transformation to both variables, it is much easier to conclude that a linear regression may fit the data appropriately. Looking at the residuals vs fitted values graph, for the Sale Price vs Square Feet, it is evident that the variance is not constant throughout. It continues to increase as the fitted values increase. However, looking at the log transformed Sale Price vs Square Feet graph, the variance is a litle better, however it still is not constant because it increases and then decreases as the x values increase.
+
+Analyzing the p value of the null hypothesis test of the slope equalling zero, the p value is so small that the null hypothesis is rejected, and it is concluded that the slope is not zero. This is true for both linear regression models. In the first model, the $R^2$ value is 0.6399, which means that about 64% of the variance in the Sale Prices can be explained by the Square Feet values. In the second model, the $R^2$ value is 0.6594, which is slightly better than before, as about 66% of the variance in (log)Sale Prices can be explained by the (log) Square Feet values.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+b = ggplot(houseData, aes(x = SqFt, y = SalePrice)) + geom_point() + xlab("SquareFeet") + ylab("SalePrice") + ggtitle("Sale Price vs Square Feet") + geom_smooth(method="lm")
+b
+b.lm = lm(SalePrice~SqFt, data = houseData)
+plot(fitted(b.lm), resid(b.lm), xlab="fitted values", ylab="residuals", main="Residuals vs Fitted", pch = 20); abline(h=0)
+summary(b.lm)
+c = ggplot(houseData, aes(x = SqFtLog, y = SalePriceLog)) + geom_point() + xlab("(log)SquareFeet") + ylab("(log)SalePrice") + ggtitle("(log)Sale Price vs (log)Square Feet") + geom_smooth(method="lm")
+c
+c.lm = lm(SalePriceLog ~ SqFtLog, data = houseData)
+plot(fitted(c.lm), resid(c.lm), xlab="fitted values", ylab="residuals", main="Residuals vs Fitted", pch = 20); abline(h=0)
+summary(c.lm)
+```
+
+
+# Assumptions
+The assumptions for the linear regression modeling include:
+
+  * The Sale Price and Square Feet variables are independent of each other
+  * The distribution of Sale Prices are normal for each Square Foot value
+  * The variance is constant throughout all square feet values
+  * The mean function is ${E}(Y \mid X) =  {\beta}_0 + {\beta}_1 X$
+
+
+# Conclusion
+
+Without conducting a log transfomation, the mean function for Sale Prices vs Square Feet is: 
+
+$Sale Price_i$ = 2066.4 + 122.2 x ($Square Feet_i$)
+
+Interpreting the meaning of this model, for every square feet increase, the sale price increases by 122.2 dollars. The model shows that if the square footage was zero, the sale price would be $2066.4, however this doesnt make sense because  no square footage is not worth anything, since there's no area. 
+
+After the log transformation, the mean function becomes:
+
+$Sale Price_i$ = 5.0197 + 0.9688 x ($Square Feet_i$)
+
+Interpreting the meaning of this model, for every 1% increase in the square footage area, the Sale Price will increase by .9688%. Similar to the idea before, the y-intercept doesn't make sense in this situation because no square footage is not worth anything, but this model shows that theoretically, it should be $5.0197.
+
+By looking at the QQ plots for the original scatterplot, it doesn't fit very well because at the beginning and the end, it curves away from the line. However, after completing a log transformation on the variables, the line fits much better than before. 
+
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+qqnorm(residuals(b.lm), main = "QQ Plot")
+qqline(residuals(b.lm), lwd = 2, col = "blue")
+grid()
+qqnorm(residuals(c.lm),  main = "(log) QQ Plot")
+qqline(residuals(c.lm), lwd = 2, col = "blue")
+grid()
+```
+
+
+Although the variance is not constant, overall, the mean function seems to be appropriate for modeling the variables because the $R^2$ value is decently high, however it is not just based on the fact of this value. The null hypothesis that the slope is equal to zero is rejected, which reveals that it is reasonable to conclude that there is a slope between the variables. Lastly, with the QQ plots, it reveals that the residual plot is approximately normal, which also supports the assumption of a linear model.
+
+# Appendix
+
+* SalePrice: The sale price of the residential property
+* LotArea: Lot Size in square feet
+* YearBuilt: Original construction date
+* SqFt: Above grade living area square feet
+
+
+
+
+
+
+
+

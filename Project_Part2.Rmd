@@ -1,0 +1,157 @@
+---
+title: "Stat 3301: Data Analysis Project Part 2"
+author: "Krescens Kok"
+date: "11/15/2019"
+output:
+  html_document:
+    theme: spacelab
+    toc: yes
+  pdf_document: default
+urlcolor: BrickRed
+---
+***
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+houseData <- read_csv("/Users/krescenskok/Documents/Stats 3301/ames_housing_data_PROJECT2019.csv")
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(packHV)
+library(broom)
+```
+
+```{r, echo=FALSE, message = FALSE}
+SalePrice = houseData$SalePrice
+LotArea = houseData$LotArea
+YearBuilt = houseData$YearBuilt
+SqFt = houseData$SqFt
+rooms = houseData$Rooms
+style = houseData$Style
+SalePriceLog = log(SalePrice)
+SqFtLog = log(SqFt)
+LotAreaLog = log(LotArea)
+YearBuiltLog = log(YearBuilt)
+view(houseData)
+
+houseData$oneStory = as.numeric(houseData$Style == "1Story")
+houseData$twoStory = as.numeric(houseData$Style == "2Story")
+```
+
+
+## Original Function with log(Sale Price) vs log(Square Footage)
+
+Using the linear regression model from part 1, it was concluded that using a log transformation on the variables Sale Price and Square Feet obtained good results to predict the sale prices. However, by using multiple variables, it has been discovered that the regression model can be even better. A log transformation is done to the square feet values because it decreases the skewness of the graph, and helps visualize the linear regression more accurately (which was seen in part one).
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+c = ggplot(houseData, aes(x = SqFtLog, y = SalePriceLog)) + geom_point() + xlab("(log)SquareFeet") + ylab("(log)SalePrice") + ggtitle("(log)Sale Price vs (log)Square Feet") + geom_smooth(method="lm")
+c
+c.lm = lm(SalePriceLog ~ SqFtLog, data = houseData)
+plot(fitted(c.lm), resid(c.lm), xlab="fitted values", ylab="residuals", main="Residuals vs Fitted", pch = 20); abline(h=0)
+```
+
+```{r, echo=FALSE, message = FALSE, fig.width = 7, fig.height=5}
+qqnorm(resid(c.lm)); qqline(resid(c.lm))
+summary(c.lm)
+```
+
+
+## Adding a Factor Variable
+
+Using the style of the houses, it was categorized into one story vs. two story houses, creating dummy variables. By adding this variable, the $R^2$ value increased by about .05, obtaining a value of .7032. Looking at the residual vs fitted plot, the points are evenly spread out throughout the zero line, and it is relatively symmetric, however the variance is not constant throughout the values of x. By looking at the qq plot, it has a pretty good fit disregarding the left side as it strays away from the normality line. 
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+c.lm = lm(SalePriceLog ~ oneStory + twoStory + SqFtLog, data = houseData)
+plot(fitted(c.lm), resid(c.lm), xlab="fitted values", ylab="residuals", main="Residuals vs Fitted", pch = 20); abline(h=0)
+qqnorm(resid(c.lm)); qqline(resid(c.lm))
+summary(c.lm)
+```
+
+
+## Adding log(Year Built)
+
+The graph log(Sale Price) vs. log(Year Built) has a positive correlation, which helps in predicting the estimated sale price. Adding this variable to the regression model, the $R^2$ value increases to .7937. Looking at the residual vs. fitted values after adding log(Year Built), the points are evenly scattered around the zero line and it is relatively symmetric, however, the variance is not constant throughout. The qq plot shows that the normality increases after adding this variable. A log transformation on the values of YearBuilt does not have to be performed because the plots have the same shape. However, performing this log transformation helps us interpret and understand the regression model more accurately.
+
+```{r, echo=FALSE, message = FALSE, fig.width = 4, fig.height=4}
+c = ggplot(houseData, aes(x = YearBuiltLog, y = SalePriceLog)) + geom_point() + xlab("log(YearBuilt)") + ylab("log(SalePrice)") + ggtitle("log(Sale Price) vs log(Year Built)") + geom_smooth(method="lm")
+c
+
+c.lm = lm(SalePriceLog ~ oneStory + twoStory + SqFtLog + YearBuiltLog, data = houseData)
+plot(fitted(c.lm), resid(c.lm), xlab="fitted values", ylab="residuals", main="Residuals vs Fitted", pch = 20); abline(h=0)
+
+adjusted.lm = lm(SalePriceLog ~ -1 + oneStory + twoStory + SqFtLog + YearBuiltLog, data = houseData)
+```
+
+
+```{r, echo=FALSE, message = FALSE, fig.width = 6, fig.height=5}
+p = houseData %>% ggplot(aes(x = SqFtLog + YearBuiltLog, y = SalePriceLog, color = style)) + geom_point() + 
+  geom_smooth(method = "lm") + ggtitle("Fitted Mean Function")
+p + theme_bw(14) + ylab("log(Sale Price)") + xlab("log(Square Feet) + log(Year Built)") + scale_color_hue("Position")
+
+qqnorm(resid(c.lm)); qqline(resid(c.lm))
+```
+
+After adjusting for the intercept, the results were obtained: 
+```{r, echo=FALSE, message = FALSE, fig.width = 7, fig.height=5}
+summary(adjusted.lm)
+```
+
+
+
+## Assumptions
+The assumptions for the linear regression modeling include:
+
+  * The Sale Price and Square Feet variables are independent of each other
+  * The Sale Price and Year Built variables are independent of each other
+  * The distribution of Sale Prices are normal for each Square Foot value
+  * The distribution of Sale Prices are normal for each Year Built value
+  * The variance is constant throughout all square feet values and year built values
+  * The mean function is ${E}(Y \mid X,Y,Z) =  {\beta}_0 + {\beta}_1 X + {\beta}_2 Y + {\beta}_3 Z$
+
+## Interpretations of the Variables
+
+  * $\widehat{\beta}_0$: The estimated log(sale price) -$65.46746 for a one story house, given that there is no square footage and the year built is zero. However this is unrealistic because if there is no square footage, the sale price should be zero.
+  * $\widehat{\beta}_1$: The estimated log(sale price) is -$65.63544 for a two story house given that there is no square footage and the year built is zero. This price .16798 dollars less than the estimated sale price for a one story house, given that the square footage and year built values are kept constant. 
+  * $\widehat{\beta}_2$: For houses with the same style and the same year that it was built in, for every 10% increase in the square footage, the sale price increases by 9.41%. 
+      * ($e^{ln(1.1)(.94343)}-1$) x $100 = 9.41$
+  * $\widehat{\beta}_3$: For houses with the same style and the same square footage, for every 10% increase in the year built, the sale price increases by 143.17%. For every 1% increase in the year built, the sale price increases by 9.72. 
+      * ($e^{ln(1.1)(.9.32296)}-1$) x $100 = 143.17$
+      * ($e^{ln(1.01)(.94343)}-1$) x $100 = 9.72$
+
+## Conclusion
+After creating different plots with different combinations of variables, I concluded that the best fit for estimating the sale prices is by using the log of the square footage, the log of the year the house was built, and using the style as a factor variable to compare one story houses vs. two story houses. 
+
+
+The final linear regression model is:
+
+$\widehat{E}(log(SalePrice_i))$ = -65.6354$U_{Oi}$ - 65.63544$U_{Ti}$ + .94343$log(SqFt_i)$ + 9.32296$log(YearBuilt_i)$
+
+
+By using the model, it is known that two story houses have a lower sale price than one story houses do, if the square footage is constant and the houses were built in the same year. By looking at the fitted mean function that was created to display the difference in one story and two story houses, it is evident that one story houses are in fact sold at a higher price. The regression line of one story houses is greater in sale price values than the regression line of two story houses, however, the slopes are very similar. By viewing this model, it is also evident that the range of two story houses are much smaller than one story houses because two story houses have a higher square footage value. 
+
+
+### Square Footage relation
+
+The square footage is related to the style of the house because this variable is the amount of square footage above the ground level. Looking at the fitted mean function, it makes sense that the maximum value for two story houses is higher than one story houses since there is more square footage when there are two levels to a house. As the value of the square footage increases, the sale price increases as well. This makes sense because if there is more room in a house, the more expensive it will be.
+
+### qq plots
+By looking at the different in the qq plots with and without the variable, year built, one can see that adding the variable increases the fit of normality. Although the left side doesn't fit the normality plot very well and strays away from the line, the normality does increase after adding year built, and more of the points are actually on the line.
+
+### Output of linear model function
+Lastly, looking at the output from the linear model function, all of the p-values are significant,. The null hypothesis is that the estimated beta value is equal to the intercept value, while the alternate hypothesis is that the estimated beta value isn't equal to the intercept value. Since the p values are all significant, this means that we reject the null hypothesis tests that the estimated beta values are equal to the intercept value, and conclude that the estimated beta values are not equal to the intercept. This helps us know that the variables used to predict the sale price are helpful.
+
+## Appendix
+
+* SalePrice: The sale price of the residential property
+* LotArea: Lot Size in square feet
+* YearBuilt: Original construction date
+* SqFt: Above grade living area square feet
+* Style: One story vs two story house
+
+
+
+
+

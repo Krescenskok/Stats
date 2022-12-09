@@ -1,0 +1,132 @@
+---
+title: "Stat 3301: Data Analysis Project Part 2"
+author: "Krescens Kok"
+date: "12/05/2019"
+output:
+  html_document:
+    theme: spacelab
+    toc: yes
+  pdf_document: default
+urlcolor: BrickRed
+---
+***
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+houseData <- read_csv("/Users/krescenskok/Documents/Stats 3301/ames_housing_data_PROJECT2019.csv")
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(packHV)
+library(broom)
+```
+
+```{r, echo=FALSE, message = FALSE}
+SalePrice = houseData$SalePrice
+LotArea = houseData$LotArea
+YearBuilt = houseData$YearBuilt
+SqFt = houseData$SqFt
+rooms = houseData$Rooms
+style = houseData$Style
+halfBaths = houseData$HalfBath
+fullBaths = houseData$FullBath
+bedrooms = houseData$Bedrooms
+SalePriceLog = log(SalePrice)
+SqFtLog = log(SqFt)
+LotAreaLog = log(LotArea)
+YearBuiltLog = log(YearBuilt)
+
+houseData = houseData %>% mutate(avgRoomSize=SqFt/rooms)
+houseData = houseData %>% mutate(YearBuiltSqr=YearBuilt^2)
+houseData$storyFactor = factor((houseData$Style))
+```
+
+## Question 1
+
+### Original Model
+```{r, echo=FALSE, message = FALSE}
+mod1 = lm(SalePriceLog ~ storyFactor + YearBuilt + YearBuiltSqr + log(LotArea) + rooms + avgRoomSize, data = houseData)
+summary(mod1)
+```
+### Model With Added Main Effects Variables
+
+```{r, echo=FALSE, message = FALSE}
+mod2 = lm(SalePriceLog ~ storyFactor + YearBuilt + YearBuiltSqr + log(LotArea) + rooms + avgRoomSize + bedrooms + halfBaths + fullBaths, data = houseData)
+summary(mod2)
+```
+### F-Test
+
+```{r, echo=FALSE, message = FALSE}
+f = anova(mod1, mod2)
+f
+```
+
+
+Since the p-value is significantly small, the null hypothesis is rejected and we can conclude that the added variables: bedrooms, half baths, and full baths is useful in predicting the fitted model. 
+
+```{r, echo=FALSE, message = FALSE}
+red = AIC(mod1)
+full = AIC(mod2)
+diff = AIC(mod2) - AIC(mod1)
+```
+### AIC
+
+The AIC for the reduced model is -907.6935, while the AIC for the full model is -946.712. Since the AIC for the full model is smaller than the AIC value for the reduced model, we can conclude that the variables: Bedrooms, FullBath, and HalfBath are useful in the data as main effects, which to predict the data more accurately. The difference between the AIC values is -39.01849. 
+
+
+```{r, echo=FALSE, message = FALSE}
+red = BIC(mod1)
+full = BIC(mod2)
+dif = BIC(mod2) - BIC(mod1)
+```
+
+### BIC
+
+The BIC for the reduced model is -864.6814, while the BIC for the full model is -887.5704. As seen with the AIC, the BIC value for the full model is less than the BIC value for the reduced model. This means that the variables: Bedrooms, FullBath, and HalfBath are useful in the data, and help predict the data more accurately. The difference between the BIC values is -22.88897.
+
+
+After reviewing the outcomes of the AIC and BIC, we can conclude that the results do agree with the hypothesis performed above. The added main effects variables are useful in predicting the log of the sale prices. 
+
+
+## Question 2
+
+Comparing the AIC values between the models of using Bedrooms, HalfBath, and FullBath as main effect variables and categorical values, the categorical model obtains a smaller AIC value of -991.3421 compared to -946.712. Looking at the BIC values, the categorical model obtains a smaller BIC value of -894.565 compared to -887.5704. The difference in the AIC values is -44.630, and the difference in the BIC values is -6.995.
+
+
+```{r, echo=FALSE, message = FALSE}
+houseData$bedroomsFactor = factor(houseData$Bedrooms)
+houseData$fullBathFactor = factor(houseData$FullBath)
+houseData$halfBathFactor = factor(houseData$HalfBath)
+```
+
+### Model With Added Categorical Variables
+```{r, echo=FALSE, message = FALSE}
+mod3 = lm(SalePriceLog ~ storyFactor + YearBuilt + YearBuiltSqr + log(LotArea) + rooms + avgRoomSize + bedroomsFactor + fullBathFactor + halfBathFactor, data = houseData)
+summary(mod3) 
+
+red = AIC(mod2)
+full = AIC(mod3)
+
+red = BIC(mod2)
+full = BIC(mod3)
+```
+
+
+## Question 3
+```{r, echo=FALSE, message = FALSE}
+predModel =data.frame(storyFactor=factor("2Story", levels=c("1Story", "2Story")),YearBuilt =c(2000), YearBuiltSqr = c(2000^2), LotArea=c(10000), rooms=c(7),avgRoomSize=c(1900/7),bedroomsFactor=factor("3", levels=c("1", "2", "3", "4", "5")), halfBathFactor=factor("1", levels=c("1","2")),fullBathFactor=factor("2", levels=c("1","2","3")))
+
+interval = predict(mod3, newdata= predModel,interval="prediction", level=.95)
+e = exp(interval)
+
+summary(houseData%>% group_by(SalePrice) %>% filter(Style=="2Story", abs(YearBuilt -2000) == min(abs(YearBuilt - 2000)), abs(LotArea -10000) == min(abs(LotArea - 10000)), Rooms==7, abs(avgRoomSize -(1900/7)) == min(abs(avgRoomSize -(1900/7))), Bedrooms==3, HalfBath==1, FullBath==2))
+```
+
+I am 95% confident that the predicted log sale price is between 12.01155 and 12.70458 dollars. After transforming the predicted log sale price back to the original scale, the interval becomes (164,645.5, 329,251.1). The predicted value does seem reasonable because the mean of the sale price is $212,000, which falls in the interval. 
+
+
+
+
