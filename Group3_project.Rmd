@@ -1,0 +1,536 @@
+---
+title: 'Man Plans, God Laughs'
+author: "Group 3: Krescens Kok, Yixian He, Shangchao Sun"
+date: "3/1/2019"
+output: 
+  html_document:
+    theme: spacelab
+    toc: yes
+  pdf_document: default
+urlcolor: BrickRed
+---
+
+***
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center")
+```
+#Abstract
+
+This project attempts to fit the given maximum and minimum temperature data to certain distributions in order to better estimate future temperature. We examined numerical (five data summary) and graphical (data plot, boxplot, histogram) summaries first. Then used method of moments and maximum likelihood estimation to do model fittings (normal and gamma distributions). Finally we examined QQ-plots to see how well model fittings are. We found that points in QQ-plot fit ab-lines in both normal and gamma distributions. Although some outliers exist, they do not have a significant effect. Also, the record temperature (estimate) has a larger difference between maximum and minimum than that of the Observed temperature (Actual). As normal and gamma distributions can both represent the data model, it represents the temperature data that fits in a pattern which is consistent. Using this discovery, future temperatures can be better estimated, and significant difference can be recognized and analyzed whether that will result in some dangerous aftermath.
+
+---
+
+#Introduction
+
+Temperature is an interesting area of study because it follows specific patterns throughout the year. In this study, temperatures were measured everyday from July 2014 to July 2015 in Charolette, North Carolina.
+
+The data contained:
+
+* mean of the actual temperatures
+* minimum of the actual temperatures
+* maximum of the actual temperatures
+* minimum average temperatures
+* maximum average temperatures
+* minimum record temperatures
+* maximum record temperatures
+    
+Note: We believed these sample data are not randomly collected but we treated them as so. 
+
+```{r echo = FALSE}
+weather_data = read.csv("https://daviddalpiaz.github.io/stat3202-sp19/project/proj-01/data/KCLT.csv", stringsAsFactors = FALSE)
+months = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+weather_data$month = months[as.numeric(unlist(lapply(strsplit(weather_data$date, "-"), function(x){return(x[2])})))]
+```
+
+This study is important in order to identify what types of patterns are occurring in a specific location, which could also help lead to conclusions about other locations. 
+
+By discovering the distinct patterns in the temperature, it allows meteorologists to predict the forecast in the future, as well as observing how Earth is changing, and evaluating the occurrence of global warming. Weather forecasting allows people to plan their days, as well as prevent dangers that could potentially occur. 
+
+---
+
+#Method
+
+##Data
+
+###Minimum and Maximum Temperatures in January
+
+Analyses are specifically done with minimum temperatures and maximum temperatures in January 2015 in Charolette, North Carolina.
+```{r echo = FALSE}
+#Extract data of January
+month_jan = weather_data[weather_data$month == "Jan",]
+```
+
+* **Numerical Summary**
+
+    * Interquartile ranges & median & mean
+
+      Note: Here we are only interested in observed minimum / maximum Temperatures in January)
+
+```{r echo = FALSE}
+summary(month_jan$actual_min_temp)
+summary(month_jan$actual_max_temp)
+```
+
+```
+From the comparison between median and mean, minimum temperature in January is slighty right skewed, and maximum  temperature is slightly left skewed. 
+```
+
+* **Graphical Summary**
+
+  * *Trend chart of Observed and Recorded Minimum / Maximum Temperatures against dates*
+
+    Note: Here we are interested in comparing between observed and recorded minimum/maximum temperatures in January.
+
+```{r echo=FALSE}
+x <- c(1:31)
+plot(x, month_jan$actual_min_temp, type = "l", lty = 1, 
+     ylim = c(-5,105),
+     main = "Observed VS Record Min and Max Temperatures in January", 
+     xlab = "Date", ylab = "Temperature", col = "darkorange", lwd = 2)
+lines(x, month_jan$actual_max_temp, type = "l", lty = 1, col= "violet", lwd = 2)
+lines(x, month_jan$record_max_temp, type = "l", lty = 2, col= "violet", lwd = 2 )
+lines(x, month_jan$record_min_temp, type = "l", lty = 2, col = "darkorange", lwd = 2)
+
+legend("topleft", legend=c("Maximum(observed)", "Minimum(observed)", "Maximum(record)", "Minimum(record)"), col=c("violet", "darkorange", "violet", "darkorange"), lty = c(1,1,2,2), cex=0.5)
+```
+    
+* *Box Plot* 
+
+Note: Here we are interested in looking at recorded minimum / maximum temperatures in January individually. 
+    
+```{r echo=FALSE} 
+boxplot(x = month_jan$actual_min_temp, month_jan$actual_max_temp, names = c("Minimum", "Maximum"), horizontal = TRUE, main = "Boxplot of Observed Minimum and Maximum Temperatures in January")
+```
+
+```
+From boxplots, minimum temperatures varied more from each other between median and upper quartile as well as within the least positive quartile group. Miximum temperatures varied more from each other between median and lower quartile as well as within the most positive quartile group. 
+```
+
+* *Histogram*
+
+Note: Here we are interested in looking at recorded minimum / maximum temperatures in January individually.
+    
+```{r echo = FALSE}
+hist(month_jan$actual_min_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Minimum Temperatures in January",
+     xlab = "Temperatures")
+box()
+grid()
+```
+```{r echo = FALSE}
+hist(month_jan$actual_max_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Maximum Temperatures in January",
+     xlab = "Temperatures")
+box()
+grid()
+```
+
+```
+Histograms for minimum or maximum temperatures in January are basically normal and compact around the middle.
+Notice that plots are based on a small and assumed randomly selected 31 data elements, they are not neat.
+```
+
+###Minimum and Maximum Temperatures in June
+
+Analyses are specifically done with minimum temperatures and maximum temperatures in June 2015 in Charolette, North Carolina.
+```{r echo = FALSE}
+#Extract data of June
+month_june = weather_data[weather_data$month == "Jun",]
+```
+
+* **Numerical Summary**
+
+    * Interquartile ranges & median & mean
+
+      Note: Here we are only interested in observed minimum / maximum Temperatures in June)
+
+```{r echo = FALSE}
+summary(month_june$actual_min_temp)
+summary(month_june$actual_max_temp)
+```
+
+```
+From the comparison between median and mean, both minimum and maximum temperatures in June are left skewed.
+```
+
+* **Graphical Summary**
+
+* *Trend chart of Observed and Recorded Minimum / Maximum Temperatures against dates*
+
+      Note: Here we are interested in comparising between observed and recorded minimum / maximum temperatures in June.
+
+```{r echo=FALSE}
+x <- c(1:30)
+plot(x, month_june$actual_min_temp, type = "l", lty = 1, 
+     ylim = c(-5,105),
+     main = "Observed VS Record Min and Max Temperatures in June", 
+     xlab = "Date", ylab = "Temperature", col = "darkorange", lwd = 2)
+lines(x, month_june$actual_max_temp, type = "l", lty = 1, col= "violet", lwd = 2)
+lines(x, month_june$record_max_temp, type = "l", lty = 2, col= "violet", lwd = 2 )
+lines(x, month_june$record_min_temp, type = "l", lty = 2, col = "darkorange", lwd = 2)
+
+legend("bottomleft", legend=c("Maximum(observed)", "Minimum(observed)", "Maximum(record)", "Minimum(record)"), col=c("violet", "darkorange", "violet", "darkorange"), lty = c(1,1,2,2), cex=0.5)
+```
+    
+* *Box Plot* 
+
+Note: Here we are interested in looking at recorded minimum / maximum temperatures in June individually. 
+    
+```{r echo=FALSE} 
+boxplot(x = month_june$actual_min_temp, month_june$actual_max_temp, names = c("Minimum", "Maximum"), horizontal = TRUE, main = "Boxplot of Observed Minimum and Maximum Temperatures in June")
+```
+
+```
+From boxplots, minimum temperatures are more compact than maximum temperatures. Minimum temperatures vary more from each other between median and lower quartile as well as within the least positive quartile group. Maximum temperatures vary more from each other between median and upper quartile as well as within the least positive quatile group.
+```
+
+* *Histogram*
+
+Note: Here we are interested in looking at recorded minimum / maximum temperatures in June individually.
+    
+```{r echo = FALSE}
+hist(month_june$actual_min_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Minimum Temperatures in June",
+     xlab = "Temperatures")
+box()
+grid()
+```
+```{r echo = FALSE}
+hist(month_june$actual_max_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Maximum Temperatures in June",
+     xlab = "Temperatures")
+box()
+grid()
+```
+
+```
+Histograms for minimum or maximum temperatures in June are left skewed. Maximum temperatures are more left skewed and less compact than minimum temperatures. Notice that plots are based on a small and assumed randomly selected 30 data elements, they are not neat.
+```
+
+---
+
+##Modeling fitting 
+
+###Minimum and Maximum Temperatures in January
+
+Based on numerical and graphical summaries, we considered using normal distribution to fit these two approximately non-skewed histograms. Maximum likelihood estimation was used to estimate parameters ($\mu$ and $\sigma$) for a normal distribution. Moreover, we also considered using a gamma distribution, which is more flexible than a normal distribution to fit these two histograms. Method of moments is used to estimate parameters ($\alpha$ and $\beta$) for gamma distribution. To evaluate how well each distribution fits dataset, qqplots were drawn.
+
+```{r echo = FALSE}
+###################################
+#Janunary min
+###################################
+#1st & 2nd moment min
+jan_min_xbar = mean(month_jan$actual_min_temp)
+jan_min_xbar2 = mean(month_jan$actual_min_temp^2)
+#1st & 2nd moment sd
+jan_min_s = sd(month_jan$actual_min_temp)
+jan_min_s2 = var(month_jan$actual_min_temp)
+#alpha & beta for gamma distribution
+jan_min_alpha_gamma = jan_min_xbar ^ 2 / (jan_min_xbar2 - jan_min_xbar ^ 2)
+jan_min_beta_gamma  = jan_min_xbar / jan_min_alpha_gamma
+#alpha & beta for beta distribution (MOM)
+jan_min_alpha_beta = ((1-jan_min_xbar)/jan_min_s2 - 1/jan_min_xbar) * jan_min_xbar^2
+jan_min_beta_beta  = jan_min_alpha_beta * (1/jan_min_xbar - 1)
+```
+
+```{r echo = FALSE}
+###################################
+#Janunary max
+###################################
+#1st & 2nd moment min
+jan_max_xbar = mean(month_jan$actual_max_temp)
+jan_max_xbar2 = mean(month_jan$actual_max_temp^2)
+#sd & variance
+jan_max_s = sd(month_jan$actual_max_temp)
+jan_max_s2 = var(month_jan$actual_max_temp)
+#alpha & beta for gamma
+jan_max_alpha_gamma = jan_max_xbar ^ 2 / (jan_max_xbar2 - jan_max_xbar ^ 2)
+jan_max_beta_gamma  = jan_max_xbar / jan_max_alpha_gamma
+#alpha & beta for beta distribution (MOM)
+jan_max_alpha_beta = ((1-jan_max_xbar)/jan_max_s2 - 1/jan_max_xbar) * jan_max_xbar^2
+jan_max_beta_beta  = jan_max_alpha_beta * (1/jan_max_xbar - 1)
+```
+
+###Minimum and Maximum Temperatures in June
+
+Based on numerical and graphical summaries, we considered to use gamma distribution to fit both minimum and 
+maximum temperatures histograms since it is flexible to fit skewed dataset. Method of moments is used to estimate parameters ($\alpha$ and $\beta$) for gamma distribution. We also considered to try normal distribution to see it works. Maximum likelihood estimation is used to estimate parameters ($\mu$ and $\sigma$) for normal distribution. To evaluate how well each distribution fits dataset, qqplots were drawn.
+
+```{r echo = FALSE}
+###################################
+#June min
+###################################
+#1st & 2nd moment mean
+june_min_xbar = mean(month_june$actual_min_temp) 
+june_min_xbar2 = mean(month_june$actual_min_temp^2)
+#1st & 2nd moment sd
+june_min_s = sd(month_june$actual_min_temp)
+june_min_s2 = var(month_june$actual_min_temp)
+#alpha & beta of gamma
+june_min_alpha_gamma = june_min_xbar ^ 2 / (june_min_xbar2 - june_min_xbar ^ 2)
+june_min_beta_gamma  = june_min_xbar / june_min_alpha_gamma
+#alpha & beta for beta distribution (MOM)
+june_min_alpha_beta = ((1-june_min_xbar)/june_min_s2 - 1/june_min_xbar) * june_min_xbar^2
+june_min_beta_beta  = june_min_alpha_beta * (1/june_min_xbar - 1)
+#beta for exponential 
+beta <- june_min_xbar
+```
+
+```{r echo = FALSE}
+###################################
+#June max
+###################################
+#1st & 2nd moment mean
+june_max_xbar = mean(month_june$actual_max_temp) 
+june_max_xbar2 = mean(month_june$actual_max_temp^2)
+#sd & variance
+june_max_s = sd(month_june$actual_max_temp)
+june_max_s2 = var(month_june$actual_max_temp)
+#alpha & beta for beta distribution (MOM)
+june_max_alpha_beta = ((1-june_max_xbar)/june_max_s2 - 1/june_max_xbar) * june_max_xbar^2
+june_max_beta_beta  = june_max_alpha_beta * (1/june_max_xbar - 1)
+#alpha & beta for gamma distribution (MOM)
+june_max_alpha_gamma = june_max_xbar ^ 2 / (june_max_xbar2 - june_max_xbar ^ 2)
+june_max_beta_gamma  = june_max_xbar / june_max_alpha_gamma
+#beta for exponential
+beta <- june_max_xbar
+```
+
+---
+
+#Result
+
+###Minimum Temperatures in January
+
+* Histogram plus modeling fitting lines
+
+```{r echo = FALSE}
+hist(month_jan$actual_min_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Minimum Temperatures in January",
+     xlab = "Temperatures",
+     xlim = c(0,60))
+box()
+grid()
+#gamma
+curve(dgamma(x, shape = jan_min_alpha_gamma, scale = jan_min_beta_gamma), 
+      add = TRUE, col = "red", lwd = 2)
+#normal distribution works the best
+curve(dnorm(x, mean = jan_min_xbar, sd = jan_min_s), 
+      add = TRUE, col = "blue", lwd = 2)
+legend("topleft", legend=c("Normal", "Gamma"),
+       col=c("blue", "red"), lty = 1:1, cex=0.8)
+```
+
+* qqplot for comparison between normal and gamma distribution 
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+#normal qqplot
+qqplot(x = qnorm(ppoints(month_jan$actual_min_temp), mean = jan_min_xbar, sd = jan_min_s),
+       y = month_jan$actual_min_temp,
+       main = "Jan. Min Temperatures, Normal",
+       xlab = "Theoretical Quantiles, Normal Distribution",
+       ylab = "Sample Quantiles, Observed minimum temp",
+       xlim = c(0, 60),
+       ylim = c(0, 60))
+abline(a = 0, b = 1, col = "blue", lwd = 2)
+grid()
+qqplot(x = qgamma(ppoints(month_jan$actual_min_temp), 
+                 shape = jan_min_alpha_gamma, scale = jan_min_beta_gamma),
+       y = month_jan$actual_min_temp,
+       xlim = c(0, 60), ylim = c(0, 60),
+       main = "Jan. Min Temperatures, Gamma",
+       xlab = "Theoretical Quantiles, Gamma Distribution",
+       ylab = "Sample Quantiles, Observed minimum temp")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+grid()
+```
+
+```
+Points in both QQ-plots fit ab line well. Outliers exist in both left and right tails in Gamma distribution.  
+```
+---
+
+###Maximum Temperatures in January
+
+* Histogram plus modeling fitting lines
+
+```{r echo = FALSE}
+hist(month_jan$actual_max_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Maximum Temperatures in January",
+     xlab = "Temperatures",
+     xlim = c(20, 80),
+     ylim = c(0, 0.05))
+box()
+grid()
+#gamma 
+curve(dgamma(x, shape = jan_max_alpha_gamma, scale = jan_max_beta_gamma), 
+      add = TRUE, col = "red", lwd = 2)
+#normal distribution works the best
+curve(dnorm(x, mean = jan_max_xbar, sd = jan_max_s), 
+      add = TRUE, col = "blue", lwd = 2)
+legend("topleft", legend=c("Normal", "Gamma"),
+       col=c("blue", "red"), lty = 1:1, cex=0.8)
+```
+
+* qqplot for comparison between normal and gamma distribution
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+#normal qqplot
+qqplot(x = qnorm(ppoints(month_jan$actual_max_temp), mean = jan_max_xbar, sd = jan_max_s),
+       y = month_jan$actual_max_temp,
+       main = "Jan. Max Temperatures, Normal",
+       xlab = "Theoretical Quantiles, Normal Distribution",
+       ylab = "Sample Quantiles, Observed maximum temp",
+       xlim = c(30, 75),
+       ylim = c(20, 80))
+abline(a = 0, b = 1, col = "blue", lwd = 2)
+grid()
+#gamma qqplot
+qqplot(x = qgamma(ppoints(month_jan$actual_max_temp), 
+                 shape = jan_max_alpha_gamma, scale = jan_max_beta_gamma),
+       y = month_jan$actual_max_temp,
+       xlim = c(30, 75), ylim = c(20, 80),
+       main = "Jan. Max Temperatures, Gamma",
+       xlab = "Theoretical Quantiles, Gamma Distribution",
+       ylab = "Sample Quantiles, Observed maximum temp")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+grid()
+```
+
+```
+Points in both QQ-plots fit ab line well. Outliers exist in left tail in both distributions.  
+```
+---
+
+###Minimum Temperatures in June
+
+* Histogram plus modeling fitting lines
+
+```{r echo = FALSE}
+hist(month_june$actual_min_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Minimum Temperatures in June",
+     xlab = "Temperatures",
+     xlim = c(55, 80))
+box()
+grid()
+#gamma 
+curve(dgamma(x, shape = june_min_alpha_gamma, scale = june_min_beta_gamma), 
+      add = TRUE, col = "red", lwd = 2)
+#normal distribution works the best
+curve(dnorm(x, mean = june_min_xbar, sd = june_min_s), 
+      add = TRUE, col = "blue", lwd = 2)
+legend("topleft", legend=c("Normal", "Gamma"),
+       col=c("blue", "red"), lty = 1:1, cex=0.8)
+```
+
+* qqplot for comparison between normal and gamma distribution
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+#normal qqplot
+qqplot(x = qnorm(ppoints(month_june$actual_min_temp), mean = june_min_xbar, sd = june_min_s),
+       y = month_june$actual_min_temp,
+       main = "June Min Temperatures, Normal",
+       xlab = "Theoretical Quantiles, Normal Distribution",
+       ylab = "Sample Quantiles, Observed minimum temp",
+       xlim = c(55, 80),
+       ylim = c(55, 80))
+abline(a = 0, b = 1, col = "blue", lwd = 2)
+grid()
+#gamma qqplot
+qqplot(x = qgamma(ppoints(month_june$actual_min_temp), 
+                 shape = june_min_alpha_gamma, scale = june_min_beta_gamma),
+       y = month_june$actual_min_temp,
+       xlim = c(55, 80), ylim = c(55, 80),
+       main = "June Min Temperatures, Gamma",
+       xlab = "Theoretical Quantiles, Gamma Distribution",
+       ylab = "Sample Quantiles, Observed minimum temp")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+grid()
+```
+
+```
+Points in both QQ-plots fit ab line relatively well. Outliers exist in both left and right tails in both 
+distributions.  
+```
+
+---
+
+###Maximum Temperatures in June
+
+* Histogram plus modeling fitting lines
+
+```{r echo = FALSE}
+hist(month_june$actual_max_temp, col = "darkgrey", probability = TRUE,
+     main = "Histrogram of Observed Maximum Temperatures in June",
+     xlab = "Temperatures",
+     xlim = c(60, 100))
+box()
+grid()
+#gamma 
+curve(dgamma(x, shape = june_max_alpha_gamma, scale = june_max_beta_gamma), 
+      add = TRUE, col = "red", lwd = 2)
+#normal distribution works the best
+curve(dnorm(x, mean = june_max_xbar, sd = june_max_s), 
+      add = TRUE, col = "blue", lwd = 2)
+legend("topleft", legend=c("Normal", "Gamma"),
+       col=c("blue", "red"), lty = 1:1, cex=0.8)
+```
+
+* qqplot for comparison between normal and gamma distribution
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+#normal qqplot
+qqplot(x = qnorm(ppoints(month_june$actual_max_temp), mean = june_max_xbar, sd = june_max_s),
+       y = month_june$actual_max_temp,
+       main = "June Max Temperatures, Normal",
+       xlab = "Theoretical Quantiles, Normal Distribution",
+       ylab = "Sample Quantiles, Observed maximum temp",
+       xlim = c(60, 110),
+       ylim = c(60, 120))
+abline(a = 0, b = 1, col = "blue", lwd = 2)
+grid()
+#gamma qqplot
+qqplot(x = qgamma(ppoints(month_june$actual_max_temp), 
+                 shape = june_max_alpha_gamma, scale = june_max_beta_gamma),
+       y = month_june$actual_max_temp,
+       xlim = c(60, 110), ylim = c(60, 120),
+       main = "June Max Temperatures, Gamma",
+       xlab = "Theoretical Quantiles, Gamma Distribution",
+       ylab = "Sample Quantiles, Observed maximum temp")
+abline(a = 0, b = 1, col = "red", lwd = 2)
+grid()
+```
+
+```
+Points in both QQ-plots fit ab line relatively ok. Outliers exist in both left and right tails in both 
+distributions.    
+```
+
+---
+
+#Discussion
+
+From the data obtained through this study, it suggests that the minimum and maximum temperatures in Charolette, North Carolina have a pattern that follows closely to a normal distribution and a gamma distribution, even though some data is roughly left skewed. Although temperatures fluctuate from day to day, overall, the temperatures increase and then decrease over the course of the year, due to the Earth's rotation and the position of the sun. By identifying this pattern, it allows meteorologists to accurately predict the temperatures for future, or recognize a unique difference that could be dangerous. Enlarging sample size via sampling data elements through years would help to estimate the population more accurately. Other data that would have helped would be temperatures throughout the same year in different locations to observe if they have the same patterns of a normal distribution, which would help conclude patterns across the world.
+
+#Appendix
+
+Variables and Descriptions:
+
+* *Date: Date from July 1, 2014, to June 30, 2015*
+* *month_jan: Data from the month of January*
+* *month_june: Data from the month of June*
+* *actual_mean_temp, actual_min_temp, actual_max_temp: Temperatures in degrees Fahrenheit for that date*
+* *record_min_temp, record_max_temp: Record min and max temperatures for that date*
+
+
+Works Cited
+
+* *“How to Make a Histogram with Basic R.” R-Bloggers, 4 May 2017, www.r-bloggers.com/how-to-make-a-histogram-with-basic-r/.*
+* *Kabacoff, Robert. “Line Charts.” Quick-R: Data Types, 2017, www.statmethods.net/graphs/line.html.*
+* *“R Boxplot() to Create Box Plot (With Numerous Examples).” DataMentor, 11 Apr. 2018, www.datamentor.io/r-programming/box-plot/.*
+
